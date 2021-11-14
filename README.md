@@ -1,9 +1,9 @@
-# Vue3 SSr App
+# Vue3 SSR App
 
 Sample repo demonstrating a Vue3 SSR app.
 
 * `npm ci`
 * `npm run build`
 * `npm run start`
-* open http://localhost:8080
+* http://localhost:8080
 
