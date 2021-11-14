@@ -1,5 +1,9 @@
+import { createWebHistory } from 'vue-router';
+
 import createApp from './create-app';
 
-const { app } = createApp();
+const { app, router } = createApp(createWebHistory());
 
-app.mount('#app');
+router.isReady().then(() => {
+    app.mount('#app')
+});

@@ -1,19 +1,16 @@
 <template>
     <div id="app">
-        <h1>Current user is: {{ user }}</h1>
-        <p>Count: {{ count }}</p>
-        <button @click="count++">Increment</button>
+        <header>
+            <router-link :to="{ name: 'page1' }">Page 1</router-link>
+            |
+            <router-link :to="{ name: 'page2' }">Page 2</router-link>
+        </header>
+        <router-view />
     </div>
 </template>
 
 <script>
 export default {
     name: 'App',
-    data() {
-        return {
-            count: 0,
-            user: 'John Doe'
-        };
-    }
 }
 </script>

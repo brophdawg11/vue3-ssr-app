@@ -13,8 +13,13 @@ const template = fs.readFileSync(path.join(__dirname, './index.html')).toString(
 
 server.use('/dist', express.static(path.join(__dirname, '../dist')));
 
-server.get('/', async (req, res) => {
-    const { app } = createApp();
+server.get('*', async (req, res) => {
+    const context = {
+        url: req.url,
+        req,
+        res,
+    };
+    const { app } = await createApp(context);
     const appHtml = await renderToString(app);
     const ssrHtml = template.replace('<!-- vue-ssr-outlet -->', appHtml);
     res.setHeader('Content-Type', 'text/html');
