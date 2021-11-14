@@ -8,8 +8,7 @@
     "build:server": "webpack --config build/webpack.server.config.js",
     "build": "npm run build:client && npm run build:server",
     "clean": "rm -rf dist/",
-    "start": "node src/server.js",
-    "start:debug": "node --inspect-brk src/server.js"
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +26,6 @@
     "vue-loader": "16.8.3",
     "webpack": "5.64.0",
     "webpack-cli": "4.9.1",
-    "webpack-manifest-plugin": "4.0.2",
     "webpack-merge": "5.8.0",
     "webpack-node-externals": "3.0.0"
   }

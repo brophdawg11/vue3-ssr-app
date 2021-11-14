@@ -1,5 +1,4 @@
 const webpack = require('webpack');
-const { WebpackManifestPlugin } = require('webpack-manifest-plugin')
 const { merge } = require('webpack-merge');
 const nodeExternals = require('webpack-node-externals')
 
