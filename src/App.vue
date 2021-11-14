@@ -1,5 +1,5 @@
 <template>
-    <div id="app">
+    <div>
         <header>
             <router-link :to="{ name: 'page1' }">Page 1</router-link>
             |

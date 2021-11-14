@@ -12,6 +12,7 @@ const baseConfig = {
         extensions: ['.js'],
     },
     output: {
+        publicPath: '/dist/',
         filename: '[name].js',
         chunkFilename: 'async/[name].js',
     },
