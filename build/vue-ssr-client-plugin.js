@@ -10,7 +10,6 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 const { Compilation } = require('webpack');
 const hash = require('hash-sum');
-const uniq = require('lodash.uniq');
 
 const isJS = (file) => /\.js(\?[^.]+)?$/.test(file);
 const isCSS = (file) => /\.css(\?[^.]+)?$/.test(file);
@@ -33,24 +32,11 @@ class VueSSRClientPlugin {
                 },
                 () => {
                     const stats = compilation.getStats().toJson();
-                    const allFiles = uniq(stats.assets.map((a) => a.name));
-                    const initialFiles = uniq(
-                        Object.keys(stats.entrypoints)
-                            .map((name) => stats.entrypoints[name].assets)
-                            .reduce((assets, all) => all.concat(assets), [])
-                            .filter(({ name }) => isJS(name) || isCSS(name))
-                            .map(({ name }) => name)
-                    );
-                    const asyncFiles = allFiles
-                        .filter((file) => isJS(file) || isCSS(file))
-                        .filter((file) => initialFiles.indexOf(file) < 0);
                     const manifest = {
                         publicPath: stats.publicPath,
-                        all: allFiles,
-                        initial: initialFiles,
-                        async: asyncFiles,
+                        all: [...new Set(stats.assets.map((a) => a.name))],
                         modules: {
-                          /* [identifier: string]: Array<index: number> */
+                            /* [identifier: string]: Array<index: number> */
                         },
                     };
                     const assetModules = stats.modules.filter((m) => m.assets.length);
