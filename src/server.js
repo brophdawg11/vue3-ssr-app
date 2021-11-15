@@ -57,6 +57,10 @@ server.get('*', async (req, res) => {
     const ssrHtml = template
         .replace('<!-- vue-ssr-preload -->', preloadHtml)
         .replace('<!-- vue-ssr-contents -->', appHtml)
+        .replace(
+            '<!-- vue-ssr-initial-state -->',
+            `<script>window.initialState=${context.initialState};</script>`,
+        )
         .replace('<!-- vue-ssr-scripts -->', scriptsHtml);
 
     res.setHeader('Content-Type', 'text/html');
