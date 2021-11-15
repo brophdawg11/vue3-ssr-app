@@ -6,11 +6,13 @@ export default function createAppStore(initialState) {
         state: {
             count: 0,
         },
+        /* eslint-disable no-param-reassign */
         mutations: {
             increment(state) {
                 state.count++;
             },
         },
+        /* eslint-enable no-param-reassign */
     });
 
     if (initialState) {

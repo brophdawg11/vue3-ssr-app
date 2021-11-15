@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 'use strict';
 
 // Client webpack plugin to generate the client-manifest used to add the proper

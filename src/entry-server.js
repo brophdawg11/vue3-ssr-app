@@ -1,12 +1,12 @@
-import { createMemoryHistory } from 'vue-router'
+import { createMemoryHistory } from 'vue-router';
 
 import createApp from './create-app';
 
-export default async function (context) {
+export default async function serverCreateApp(context) {
     const { app, router, store } = createApp(createMemoryHistory());
 
-    await router.push(context.url)
-    await router.isReady()
+    await router.push(context.url);
+    await router.isReady();
 
     const components = router.currentRoute.value.matched.flatMap(r => Object.values(r.components));
 

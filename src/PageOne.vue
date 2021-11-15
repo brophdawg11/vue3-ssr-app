@@ -2,17 +2,23 @@
     <div>
         <h1>Page 1</h1>
         <p>Local Count: {{ count }}</p>
-        <button @click="count++">Increment</button>
+        <button @click="count++">
+            Increment
+        </button>
         <p>Store Count: {{ $store.state.count }}</p>
-        <button @click="$store.commit('increment')">Increment</button>
+        <button @click="$store.commit('increment')">
+            Increment
+        </button>
     </div>
 </template>
 
 <script>
 export default {
-    name: 'Page 1',
+    name: 'PageOne',
     async fetchData({ store }) {
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => {
+            setTimeout(r, 1000);
+        });
         store.commit('increment');
     },
     data() {
@@ -20,5 +26,5 @@ export default {
             count: 0,
         };
     },
-}
+};
 </script>

@@ -1,6 +1,6 @@
 const webpack = require('webpack');
 const { merge } = require('webpack-merge');
-const { VueSSRClientPlugin } = require('./vue-ssr-client-plugin')
+const { VueSSRClientPlugin } = require('./vue-ssr-client-plugin');
 const { baseConfig } = require('./webpack.base.config');
 
 module.exports = merge(baseConfig, {

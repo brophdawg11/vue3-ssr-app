@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 'use strict';
 
 // SSR webpack loader to inject code that will populate ssrContext._registeredComponents

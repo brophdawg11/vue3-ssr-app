@@ -1,6 +1,6 @@
 const webpack = require('webpack');
 const { merge } = require('webpack-merge');
-const nodeExternals = require('webpack-node-externals')
+const nodeExternals = require('webpack-node-externals');
 
 const registerSsrComponentLoader = require.resolve('./register-ssr-component-loader');
 const { baseConfig } = require('./webpack.base.config');
@@ -24,9 +24,9 @@ module.exports = merge(baseConfig, {
         rules: [
             // This loader registers components for async chunk inference
             {
-              test: /\.js$/,
-              resourceQuery: /^\?vue/,
-              use: registerSsrComponentLoader,
+                test: /\.js$/,
+                resourceQuery: /^\?vue/,
+                use: registerSsrComponentLoader,
             },
         ],
     },

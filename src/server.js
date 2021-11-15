@@ -1,8 +1,6 @@
 const fs = require('fs');
-const path = require('path');
 
 const express = require('express');
-const { createSSRApp } = require('vue');
 const { renderToString } = require('@vue/server-renderer');
 
 const { default: createApp } = require('../dist/server/app');
@@ -10,9 +8,9 @@ const clientManifest = require('../dist/client/vue-ssr-client-manifest.json');
 
 const { publicPath } = clientManifest;
 const server = express();
-const template = fs.readFileSync(path.join(__dirname, './index.html')).toString();
+const template = fs.readFileSync(`${__dirname}/index.html`).toString();
 
-server.use(clientManifest.publicPath, express.static(path.join(__dirname, '../dist/client')));
+server.use(clientManifest.publicPath, express.static(`${__dirname}/../dist/client`));
 
 const renderAttrs = attrs => Object.entries(attrs)
     .map(([k, v]) => `${k}${v != null ? `="${v}"` : ''}`).join(' ');
@@ -33,6 +31,7 @@ server.get('*', async (req, res) => {
     const appHtml = await renderToString(app, context);
 
     // Determine <script> tags to include for this route
+    // eslint-disable-next-line no-underscore-dangle
     const activeScripts = [...context._registeredComponents]
         .flatMap(id => clientManifest.modules[id] || [])
         .map(idx => clientManifest.all[idx])
@@ -68,5 +67,6 @@ server.get('*', async (req, res) => {
 });
 
 server.listen(8080, () => {
+    // eslint-disable-next-line no-console
     console.info('Server listening at http://localhost:8080');
 });

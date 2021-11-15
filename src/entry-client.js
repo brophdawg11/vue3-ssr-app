@@ -22,5 +22,5 @@ router.isReady().then(() => {
         }
     });
 
-    app.mount('#app')
+    app.mount('#app');
 });
