@@ -22,3 +22,11 @@ export default {
     name: 'App',
 };
 </script>
+
+<style lang="scss">
+$bgColor: lightgrey;
+
+body {
+    background: $bgColor;
+}
+</style>

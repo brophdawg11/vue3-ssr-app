@@ -30,17 +30,20 @@ server.get(/^[a-z0-9-_/]*$/i, async (req, res) => {
     const { app } = await createApp(context);
     const appHtml = await renderToString(app, context);
 
-    // Determine <script> tags to include for this route
+    // Determine <link>/<script> tags to include for this route
     // eslint-disable-next-line no-underscore-dangle
-    const activeScripts = [...context._registeredComponents]
+    const activeAssets = [...context._registeredComponents]
         .flatMap(id => clientManifest.modules[id] || [])
         .map(idx => clientManifest.all[idx])
         .filter(s => s);
 
-    const scriptsHtml = activeScripts
-        .map(path => renderEl('script', {
-            src: `${publicPath}${path}`,
-            defer: null,
+    const activeScripts = activeAssets.filter(path => path.endsWith('.js'));
+    const activeStylesheets = activeAssets.filter(path => path.endsWith('.css'));
+
+    const stylesheetsHtml = activeStylesheets
+        .map(path => renderEl('link', {
+            rel: 'stylesheet',
+            href: `${publicPath}${path}`,
         }))
         .join('');
 
@@ -52,8 +55,16 @@ server.get(/^[a-z0-9-_/]*$/i, async (req, res) => {
         }))
         .join('');
 
+    const scriptsHtml = activeScripts
+        .map(path => renderEl('script', {
+            src: `${publicPath}${path}`,
+            defer: null,
+        }))
+        .join('');
+
     // Perform template replacement
     const ssrHtml = template
+        .replace('<!-- vue-ssr-stylesheets -->', stylesheetsHtml)
         .replace('<!-- vue-ssr-preload -->', preloadHtml)
         .replace('<!-- vue-ssr-contents -->', appHtml)
         .replace(

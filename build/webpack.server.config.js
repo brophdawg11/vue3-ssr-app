@@ -3,9 +3,9 @@ const { merge } = require('webpack-merge');
 const nodeExternals = require('webpack-node-externals');
 
 const registerSsrComponentLoader = require.resolve('./register-ssr-component-loader');
-const { baseConfig } = require('./webpack.base.config');
+const { getBaseConfig } = require('./webpack.base.config');
 
-module.exports = merge(baseConfig, {
+module.exports = merge(getBaseConfig(true), {
     entry: {
         app: './src/entry-server.js',
     },
