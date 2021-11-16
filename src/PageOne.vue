@@ -13,6 +13,14 @@
         <button @click="$store.commit('one/increment')">
             Increment
         </button>
+        <br>
+        <router-link :to="{ name: 'page1', query: { v: '1' } }">
+            Intra-page link (fetchData ignored)
+        </router-link>
+        <br>
+        <router-link :to="{ name: 'page1', query: { v: '2' } }">
+            Intra-page link (fetchData processed)
+        </router-link>
     </div>
 </template>
 
@@ -34,6 +42,9 @@ export default {
             },
             /* eslint-enable no-param-reassign */
         },
+    },
+    shouldProcessRouteUpdate({ route }) {
+        return route.query.v === '2';
     },
     async fetchData({ store }) {
         await new Promise((r) => {

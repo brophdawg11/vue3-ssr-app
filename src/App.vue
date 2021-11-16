@@ -13,7 +13,7 @@
                 Page 3
             </router-link>
         </header>
-        <router-view />
+        <router-view :key="$route.path" />
     </div>
 </template>
 
