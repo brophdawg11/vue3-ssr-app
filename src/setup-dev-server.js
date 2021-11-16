@@ -53,7 +53,7 @@ module.exports = function setupDevServer(opts, cb) {
         // Don't resolve until both are ready the first time
         if (serverCreateApp && clientManifest) {
             log('Pushing updated manifest/template/server module to node server');
-            cb(clientManifest, template, serverCreateApp);
+            cb(serverCreateApp, clientManifest, template);
             ready();
         }
     };

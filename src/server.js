@@ -5,18 +5,10 @@ const { renderToString } = require('@vue/server-renderer');
 
 const setupDevServer = require('./setup-dev-server');
 
-const createApp = require('../dist/server/app').default;
-
 const publicPath = '/dist/';
 const templatePath = `${__dirname}/index.html`;
 
 const server = express();
-
-const isHMR = process.env.IS_HMR === 'true';
-
-let hmr;
-let clientManifest;
-let template;
 
 const renderAttrs = attrs => Object.entries(attrs)
     .map(([k, v]) => `${k}${v != null ? `="${v}"` : ''}`).join(' ');
@@ -83,8 +75,11 @@ async function render(localCreateApp, localClientManifest, localTemplate, req, r
     res.send(ssrHtml);
 }
 
-if (isHMR) {
-    hmr = {};
+if (process.env.IS_HMR === 'true') {
+    // Locally-scoped mutatable vars that can accept updates from the HMR process
+    let createApp;
+    let clientManifest;
+    let template;
     const hmrOpts = {
         app: server,
         clientConfigPath: '../build/webpack.client.config',
@@ -94,25 +89,27 @@ if (isHMR) {
     };
     // Setup HMR, which will internally kick off both client and server builds
     // Once readyPromise resolves, we're good to accept requests.  The callback
-    // function here will always update the hmr.* fields to the latest and greatest
-    // versions so that when we call rendeR() below we're always using the latest
-    hmr.readyPromise = setupDevServer(hmrOpts, (hmrClientManifest, hmrTemplate, hmrCreateApp) => {
-        hmr.createApp = hmrCreateApp;
-        hmr.clientManifest = hmrClientManifest;
-        hmr.template = hmrTemplate;
+    // function here will always update the locally-scoped vars to the latest
+    // versions so that when we call render() below we're always using the latest
+    const readyPromise = setupDevServer(hmrOpts, (a, m, t) => {
+        createApp = a;
+        clientManifest = m;
+        template = t;
     });
     server.get(/^[a-z0-9-_/]*$/i, async (req, res, next) => {
         try {
-            await hmr.readyPromise;
-            await render(hmr.createApp, hmr.clientManifest, hmr.template, req, res);
+            await readyPromise;
+            await render(createApp, clientManifest, template, req, res);
         } catch (e) {
             next(e);
         }
     });
 } else {
     // eslint-disable-next-line global-require
-    clientManifest = require('../dist/client/vue-ssr-client-manifest.json');
-    template = fs.readFileSync(templatePath).toString();
+    const createApp = require('../dist/server/app').default;
+    // eslint-disable-next-line global-require
+    const clientManifest = require('../dist/client/vue-ssr-client-manifest.json');
+    const template = fs.readFileSync(templatePath).toString();
     // Don't serve static files from dist during HRM, we want them handled by the
     // HMR in-memory FS
     server.use(publicPath, express.static(`${__dirname}/../dist/client`));
