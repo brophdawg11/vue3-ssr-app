@@ -58,7 +58,7 @@ server.get(/^[a-z0-9-_/]*$/i, async (req, res) => {
         .replace('<!-- vue-ssr-contents -->', appHtml)
         .replace(
             '<!-- vue-ssr-initial-state -->',
-            `<script>window.initialState=${context.initialState};</script>`,
+            `<script>window.initialState=JSON.parse(${context.initialState});</script>`,
         )
         .replace('<!-- vue-ssr-scripts -->', scriptsHtml);
 

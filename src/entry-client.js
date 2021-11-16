@@ -4,8 +4,7 @@ import createApp from './create-app';
 import { useFetchDataClient, useRouteVuexModulesClient } from './entry-utils';
 
 const logger = console;
-const initialState = JSON.parse(window.initialState);
-const { app, router, store } = createApp(createWebHistory(), initialState);
+const { app, router, store } = createApp(createWebHistory(), window.initialState);
 
 window.app = app;
 window.router = router;
