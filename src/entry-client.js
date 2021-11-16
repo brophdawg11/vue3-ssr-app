@@ -24,3 +24,7 @@ router.isReady().then(() => {
     });
     app.mount('#app');
 });
+
+if (import.meta.webpackHot) {
+    import.meta.webpackHot.accept();
+}

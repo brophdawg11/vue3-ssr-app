@@ -60,3 +60,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+$bgColor: lightblue;
+
+button {
+    background: $bgColor;
+}
+</style>
