@@ -1,6 +1,7 @@
 import { createMemoryHistory } from 'vue-router';
 
-import { getMatchedComponents, getModuleName, safelyRegisterModule } from './entry-utils';
+import { useFetchDataServer, useRouteVuexModulesServer } from './entry-utils';
+
 import createApp from './create-app';
 
 export default async function serverCreateApp(context) {
@@ -10,36 +11,9 @@ export default async function serverCreateApp(context) {
     await router.push(context.url);
     await router.isReady();
 
-    const components = getMatchedComponents(router.currentRoute.value);
+    useRouteVuexModulesServer(router, store, logger);
 
-    // Register any dynamic Vuex modules.  Registering the store
-    // modules as part of the component allows the module to be bundled
-    // with the async-loaded component and not in the initial root store
-    // bundle
-    components
-        .filter(c => 'vuex' in c)
-        .flatMap(c => c.vuex)
-        .forEach((vuexModuleDef) => {
-            const name = getModuleName(vuexModuleDef, router.currentRoute);
-            safelyRegisterModule(store, name, vuexModuleDef.module, logger);
-        });
-
-    const fetchDataArgs = {
-        ssrContext: context,
-        app,
-        route: router.currentRoute,
-        router,
-        store,
-    };
-
-    // TODO: middleware()
-
-    await Promise.all([
-        // TODO: globalFetchData(),
-        ...components.map(c => c?.fetchData(fetchDataArgs)),
-    ]);
-
-    // TODO: postMiddleware()
+    useFetchDataServer(context, app, router, store);
 
     context.initialState = JSON.stringify(JSON.stringify(store.state));
 

@@ -8,6 +8,10 @@ const routes = [{
     name: 'page2',
     path: '/page-2',
     component: () => import(/* webpackChunkName: "page-two" */ './PageTwo.vue'),
+}, {
+    name: 'page3',
+    path: '/page-3',
+    component: () => import(/* webpackChunkName: "page-three" */ './PageThree.vue'),
 }];
 
 export default function createAppRouter(history) {
