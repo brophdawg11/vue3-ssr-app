@@ -16,7 +16,7 @@ const renderAttrs = attrs => Object.entries(attrs)
     .map(([k, v]) => `${k}${v != null ? `="${v}"` : ''}`).join(' ');
 const renderEl = (tag, attrs) => `<${tag} ${renderAttrs(attrs)}></${tag}>`;
 
-server.get('*', async (req, res) => {
+server.get(/^[a-z0-9-_/]*$/i, async (req, res) => {
     const context = {
         url: req.url,
         req,

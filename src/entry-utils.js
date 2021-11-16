@@ -87,6 +87,21 @@ export function useRouteVuexModulesServer(router, store, logger) {
         });
 }
 
+// Run middlewares + fetchData for the given route
+async function runFetchData(components, fetchDataArgs, opts) {
+    if (opts?.middleware) {
+        await opts.middleware(fetchDataArgs);
+    }
+    const results = await Promise.all([
+        opts?.globalFetchData(fetchDataArgs),
+        ...components.map(c => c?.fetchData(fetchDataArgs)),
+    ]);
+    if (opts?.postMiddleware) {
+        await opts.postMiddleware(fetchDataArgs);
+    }
+    return results;
+}
+
 /**
  * Wire up server-side fetchData/globalFetchData execution for current route components
  *
@@ -94,20 +109,16 @@ export function useRouteVuexModulesServer(router, store, logger) {
  * @param   {object} app        App instance
  * @param   {object} router     Router instance
  * @param   {object} store      Vuex store instance
+ * @param   {object} opts                 Additional options
+ * @param   {object} opts.middleware      Function to execute before fetchData
+ * @param   {object} opts.postMiddleware  Function to execute after fetchData
  * @returns {undefined}         No return value
  */
-export async function useFetchDataServer(ssrContext, app, router, store) {
+export async function useFetchDataServer(ssrContext, app, router, store, opts) {
     const route = router.currentRoute.value;
     const fetchDataArgs = getFetchDataArgs(ssrContext, app, router, store, route);
-
-    // TODO: await middleware()
-
-    await Promise.all([
-        // TODO: globalFetchData(),
-        ...getMatchedComponents(route).map(c => c?.fetchData(fetchDataArgs)),
-    ]);
-
-    // TODO: await postMiddleware()
+    const components = getMatchedComponents(route);
+    await runFetchData(components, fetchDataArgs, opts);
 }
 
 /**
@@ -209,6 +220,7 @@ export function useRouteVuexModulesClient(app, router, store, logger) {
             .filter(c => 'vuex' in c)
             .flatMap(c => c.vuex)
             .map(vuexModuleDef => getModuleName(vuexModuleDef, to));
+
         const fromModuleNames = getMatchedComponents(from)
             .filter(c => 'vuex' in c)
             .flatMap(c => c.vuex)
@@ -244,21 +256,39 @@ export function useRouteVuexModulesClient(app, router, store, logger) {
 /**
  * Wire up client-side fetchData/globalFetchData execution for current route components
  *
- * @param   {object} app        App instance
- * @param   {object} router     Router instance
- * @param   {object} store      Vuex store instance
- * @param   {object} logger     Logger instance
- * @returns {undefined}         No return value
+ * @param   {object} app                  App instance
+ * @param   {object} router               Router instance
+ * @param   {object} store                Vuex store instance
+ * @param   {object} logger               Logger instance
+ * @param   {object} opts                 Additional options
+ * @param   {object} opts.middleware      Function to execute before fetchData
+ * @param   {object} opts.postMiddleware  Function to execute after fetchData
+ * @returns {undefined}                   No return value
  */
-export function useFetchDataClient(app, router, store, logger) {
+export function useFetchDataClient(app, router, store, logger, opts) {
+    // Prior to resolving a route, execute any component fetchData methods.
+    // Approach based on:
+    //   https://ssr.vuejs.org/en/data.html#client-data-fetching
     router.beforeResolve(async (to, from, next) => {
+        const routeUpdateStr = `${from.fullPath} -> ${to.fullPath}`;
         const fetchDataArgs = getFetchDataArgs(null, app, router, store, to, from);
         try {
-            const components = to.matched.flatMap(r => Object.values(r.components));
-            await Promise.all(components.map(c => c?.fetchData(fetchDataArgs)));
-            next();
+            const components = getMatchedComponents(to)
+                .filter(c => shouldProcessRouteUpdate(c, fetchDataArgs));
+
+            // Short circuit if none of our components need to process the route update
+            if (components.length === 0) {
+                logger.debug(`Ignoring route update ${routeUpdateStr}`);
+                next();
+                return;
+            }
+
+            logger.debug(`Running middleware/fetchData for route update ${routeUpdateStr}`);
+            const results = await runFetchData(components, fetchDataArgs, opts);
+
+            // Call next with the first non-null resolved value from fetchData
+            next(results.find(r => r != null));
         } catch (e) {
-            logger.error('Error during middleware/fetchData chain', e);
             next(e);
         }
     });
