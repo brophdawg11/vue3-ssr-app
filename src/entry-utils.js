@@ -1,3 +1,11 @@
+// To be toggled on via perfInit if desired
+const PERF_PREFIX = 'urbnperf';
+const perfAvailable = (
+    typeof window !== 'undefined' &&
+    window.performance !== null &&
+    window.performance.getEntriesByType
+);
+
 // TODO: Quick placeholders for lodash functions
 const isFunction = f => typeof f === 'function';
 
@@ -65,6 +73,58 @@ function getFetchDataArgs(ssrContext, app, router, store, to, from) {
     };
 }
 
+// Look up the current perf mark of the format urbnperf|*|start
+function getCurrentPerfMark() {
+    return window.performance.getEntriesByType('mark')
+        .find(m => m.name.startsWith(PERF_PREFIX) && m.name.endsWith('start'));
+}
+
+// Initialize perf tracking for a new client-side route
+function perfInit(to, from) {
+    if (!perfAvailable) {
+        return;
+    }
+
+    // Always clear any prior measurements before starting a new one
+    window.performance.getEntriesByType('mark')
+        .filter(m => m.name.startsWith(PERF_PREFIX))
+        .forEach(m => window.performance.clearMarks(m.name));
+
+    window.performance.getEntriesByType('measure')
+        .filter(m => m.name.startsWith(PERF_PREFIX))
+        .forEach(m => window.performance.clearMeasures(m.name));
+
+    // Start a new routing operation with a mark such as:
+    //   urbnperf|Homepage->Catch-All|start
+    window.performance.mark(`${PERF_PREFIX}|${from.name}->${to.name}|start`);
+}
+
+// Issue a performance.measure call for the given name using the most recent
+// 'start' mark
+export function perfMeasure(name) {
+    if (!perfAvailable) {
+        return false;
+    }
+
+    const mark = getCurrentPerfMark();
+    if (!mark) {
+        // Can't measure if we don't have a starting mark to measure from
+        return false;
+    }
+
+    // Add a measurement from the start mark with the current name.  Example:
+    //     urbnperf|Homepage->Catch-All|done
+    const [prefix, route] = mark.name.split('|');
+    window.performance.measure(`${prefix}|${route}|${name}`, mark.name);
+
+    // return true here to indicate that we logged the measurement, but do not
+    // attempt to return the measure object itself because it is not returned
+    // from window.performance.measure according to the spec.  Some browsers
+    // seem to return it our of convenience, but specifically mobile safari does
+    // not
+    return true;
+}
+
 /**
  * Register any dynamic Vuex modules.  Registering the store
  * modules as part of the component allows the module to be bundled
@@ -87,21 +147,6 @@ export function useRouteVuexModulesServer(router, store, logger) {
         });
 }
 
-// Run middlewares + fetchData for the given route
-async function runFetchData(components, fetchDataArgs, opts) {
-    if (opts?.middleware) {
-        await opts.middleware(fetchDataArgs);
-    }
-    const results = await Promise.all([
-        opts?.globalFetchData(fetchDataArgs),
-        ...components.map(c => c?.fetchData(fetchDataArgs)),
-    ]);
-    if (opts?.postMiddleware) {
-        await opts.postMiddleware(fetchDataArgs);
-    }
-    return results;
-}
-
 /**
  * Wire up server-side fetchData/globalFetchData execution for current route components
  *
@@ -118,7 +163,16 @@ export async function useFetchDataServer(ssrContext, app, router, store, opts) {
     const route = router.currentRoute.value;
     const fetchDataArgs = getFetchDataArgs(ssrContext, app, router, store, route);
     const components = getMatchedComponents(route);
-    await runFetchData(components, fetchDataArgs, opts);
+    if (opts?.middleware) {
+        await opts.middleware(fetchDataArgs);
+    }
+    await Promise.all([
+        opts?.globalFetchData(fetchDataArgs),
+        ...components.map(c => c?.fetchData(fetchDataArgs)),
+    ]);
+    if (opts?.postMiddleware) {
+        await opts.postMiddleware(fetchDataArgs);
+    }
 }
 
 /**
@@ -266,6 +320,22 @@ export function useRouteVuexModulesClient(app, router, store, logger) {
  * @returns {undefined}                   No return value
  */
 export function useFetchDataClient(app, router, store, logger, opts) {
+    if (perfAvailable) {
+        // Start perf tracking for this route
+        router.beforeEach((to, from, next) => {
+            const fetchDataArgs = getFetchDataArgs(null, app, router, store, to, from);
+            const components = getMatchedComponents(to)
+                .filter(c => shouldProcessRouteUpdate(c, fetchDataArgs));
+
+            // Only measure performance for non-ignored route changed
+            if (components.length > 0) {
+                perfInit(to, from);
+            }
+
+            next();
+        });
+    }
+
     // Prior to resolving a route, execute any component fetchData methods.
     // Approach based on:
     //   https://ssr.vuejs.org/en/data.html#client-data-fetching
@@ -284,7 +354,19 @@ export function useFetchDataClient(app, router, store, logger, opts) {
             }
 
             logger.debug(`Running middleware/fetchData for route update ${routeUpdateStr}`);
-            const results = await runFetchData(components, fetchDataArgs, opts);
+            perfMeasure('beforeResolve');
+            if (opts?.middleware) {
+                await opts.middleware(fetchDataArgs);
+            }
+            perfMeasure('middleware-complete');
+            const results = await Promise.all([
+                opts?.globalFetchData(fetchDataArgs),
+                ...components.map(c => c?.fetchData(fetchDataArgs)),
+            ]);
+            perfMeasure('fetchData-complete');
+            if (opts?.postMiddleware) {
+                await opts.postMiddleware(fetchDataArgs);
+            }
 
             // Call next with the first non-null resolved value from fetchData
             next(results.find(r => r != null));
